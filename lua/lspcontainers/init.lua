@@ -71,19 +71,13 @@ local supported_languages = {
 }
 
 -- default command to run the lsp container
-local default_cmd = function (runtime, workdir, image, network, docker_volume)
+local default_cmd = function (runtime, workdir, image, network, volumes)
   if vim.loop.os_uname().sysname == "Windows_NT" then
     workdir = Dos2UnixSafePath(workdir)
   end
 
-  local mnt_volume
-  if docker_volume ~= nil then
-    mnt_volume ="--volume="..docker_volume..":"..workdir..":z"
-  else
-    mnt_volume = "--volume="..workdir..":"..workdir..":z"
-  end
 
-  return {
+  cmd = {
     runtime,
     "container",
     "run",
@@ -91,9 +85,14 @@ local default_cmd = function (runtime, workdir, image, network, docker_volume)
     "--rm",
     "--network="..network,
     "--workdir="..workdir,
-    mnt_volume,
-    image
   }
+  if volumes ~= nil then
+      for _, v in pairs(volumes) do
+        table.insert(cmd, "--volume="..v)
+      end
+  end
+  table.insert(cmd, "--")
+  table.insert(cmd, image)
 end
 
 local function command(server, user_opts)
@@ -103,7 +102,7 @@ local function command(server, user_opts)
     root_dir = vim.fn.getcwd(),
     cmd_builder = default_cmd,
     network = "none",
-    docker_volume = nil,
+    volumes = {},
   }
 
   -- If the LSP is known, it override the defaults:
@@ -116,12 +115,23 @@ local function command(server, user_opts)
     opts = vim.tbl_extend("force", opts, user_opts)
   end
 
+  if user_opts.volumes == nil then
+    -- legacy; todo: leg deprecation warning?
+    if user_opts.docker_volume ~= nil then
+      table.insert(opts.volumes, user_opts.docker_volume..":"..opts.root_dir..":z")
+    else
+      table.insert(opts.volumes, opts.root_dir..":"..opts.root_dir..":z")
+    end
+  end
+
+  -- validation
+
   if not opts.image then
     error(string.format("lspcontainers: no image specified for `%s`", server))
     return 1
   end
 
-  return opts.cmd_builder(opts.container_runtime, opts.root_dir, opts.image, opts.network, opts.docker_volume)
+  cmd = opts.cmd_builder(opts.container_runtime, opts.root_dir, opts.image, opts.network, opts.volumes)
 end
 
 Dos2UnixSafePath = function(workdir)
