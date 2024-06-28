@@ -103,6 +103,7 @@ local function command(server, user_opts)
     cmd_builder = default_cmd,
     network = "none",
     volumes = {},
+    sudo = false,
   }
 
   -- If the LSP is known, it override the defaults:
@@ -132,6 +133,9 @@ local function command(server, user_opts)
   end
 
   cmd = opts.cmd_builder(opts.container_runtime, opts.root_dir, opts.image, opts.network, opts.volumes)
+  if opts.sudo then
+    table.insert(opts, 1, "sudo")
+  end
 end
 
 Dos2UnixSafePath = function(workdir)
