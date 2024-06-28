@@ -26,9 +26,9 @@ local supported_languages = {
       local user = user_id..":"..group_id
 
       if runtime == "docker" then
-      	network = "bridge"
+        network = "bridge"
       elseif runtime == "podman" then
-		network = "slirp4netns"
+        network = "slirp4netns"
       end
 
       return {
