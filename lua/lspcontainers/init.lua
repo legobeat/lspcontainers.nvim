@@ -133,7 +133,7 @@ local function command(server, user_opts)
   end
 
   cmd = opts.cmd_builder(opts.container_runtime, opts.root_dir, opts.image, opts.network, opts.volumes)
-  if opts.sudo then
+  if opts.sudo ~= nil and opts.sudo ~= false and opts.sudo ~= 0 then
     table.insert(opts, 1, "sudo")
   end
 end
